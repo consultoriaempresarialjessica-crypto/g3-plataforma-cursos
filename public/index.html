@@ -674,6 +674,7 @@ function renderCourseDetail(){
           <div class="side-stat"><span class="lbl">Carga horária</span><span class="val">${c.workload||0}h</span></div>
           <div class="side-stat"><span class="lbl">Categoria</span><span class="val">${esc(c.category||'Geral')}</span></div>
           <div class="side-stat"><span class="lbl">Certificação</span><span class="val">Com QR Code</span></div>
+          ${c.executionDate ? `<div class="side-stat"><span class="lbl">Realizado em</span><span class="val">${fmtDate(c.executionDate)}</span></div>` : ''}
         </div>
         <div class="side-card">
           <h4>Instrutora</h4>
@@ -995,7 +996,14 @@ function renderCoursesPanel(){
         <div class="field"><label>Título do curso/treinamento</label><input id="crsTitle" placeholder="Ex.: Planejamento Tributário — Regimes 2026" value="${editing?esc(editing.title):''}"></div>
         <div class="field"><label>Categoria</label><input id="crsCategory" placeholder="Ex.: Planejamento Tributário" value="${editing?esc(editing.category||''):''}"></div>
       </div>
-      <div class="field"><label>Descrição</label><textarea id="crsDesc" rows="3" placeholder="Resumo do conteúdo abordado">${editing?esc(editing.description||''):''}</textarea></div>
+      <div class="field">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <label style="margin-bottom:0;">Descrição</label>
+          <button type="button" class="btn ghost small" onclick="autoFillDescription()">✨ Gerar descrição automaticamente</button>
+        </div>
+        <textarea id="crsDesc" rows="3" placeholder="Resumo do conteúdo abordado (ou clique em 'Gerar descrição automaticamente' acima)">${editing?esc(editing.description||''):''}</textarea>
+        <p style="font-size:11.5px; color:var(--ink-soft); margin-top:4px;">O texto gerado é só um ponto de partida — você pode editar livremente antes ou depois de salvar.</p>
+      </div>
       <div class="row2">
         <div class="field"><label>Tipo de material</label>
           <select id="crsType">
@@ -1006,6 +1014,7 @@ function renderCoursesPanel(){
         </div>
         <div class="field"><label>Carga horária (h)</label><input id="crsWorkload" type="number" min="1" value="${editing?editing.workload:4}"></div>
       </div>
+      <div class="field"><label>Data de realização (opcional)</label><input id="crsExecDate" type="date" value="${editing&&editing.executionDate?editing.executionDate:''}"></div>
       <div class="field">
         <label>Material do curso/treinamento</label>
         <div class="upload-row">
@@ -1015,7 +1024,7 @@ function renderCoursesPanel(){
       </div>
       <div class="or-divider">ou cole um link já existente</div>
       <div class="field"><label>Link do material</label><input id="crsUrl" placeholder="URL do PDF, vídeo (YouTube/Vimeo) ou documento" value="${editing?esc(editing.url||''):''}"></div>
-      <p style="font-size:12px; color:var(--ink-soft); margin-top:-6px;">Você pode enviar o arquivo direto aqui (até ~50MB) ou colar um link do YouTube, Vimeo, Google Drive etc. Vídeos longos: prefira YouTube/Vimeo não-listado.</p>
+      <p style="font-size:12px; color:var(--ink-soft); margin-top:-6px;">Você pode enviar o arquivo direto aqui (até ~4MB) ou colar um link do YouTube, Vimeo, Google Drive etc. Vídeos longos: prefira YouTube/Vimeo não-listado.</p>
       <div style="display:flex; gap:10px; margin-top:14px;">
         ${editing
           ? `<button class="btn copper" onclick="saveEditCourse('${editing.id}')">Salvar alterações</button>
@@ -1027,7 +1036,7 @@ function renderCoursesPanel(){
       <h3>Cursos e treinamentos cadastrados (${state.courses.length})</h3>
       ${state.courses.length===0 ? `<div class="empty">Nenhum curso ou treinamento cadastrado ainda.</div>` : `
       <table>
-        <thead><tr><th>Título</th><th>Categoria</th><th>Tipo</th><th>Carga</th><th></th></tr></thead>
+        <thead><tr><th>Título</th><th>Categoria</th><th>Tipo</th><th>Carga</th><th>Data</th><th></th></tr></thead>
         <tbody>
           ${state.courses.map(c=>`
             <tr>
@@ -1035,6 +1044,7 @@ function renderCoursesPanel(){
               <td>${esc(c.category||'—')}</td>
               <td><span class="badge ${c.type}">${typeLabel(c.type)}</span></td>
               <td>${c.workload||0}h</td>
+              <td>${c.executionDate?fmtDate(c.executionDate):'—'}</td>
               <td style="white-space:nowrap;">
                 <button class="btn ghost small" onclick="startEditCourse('${c.id}')">Editar</button>
                 <button class="btn danger small" onclick="deleteCourse('${c.id}')">Excluir</button>
@@ -1089,6 +1099,33 @@ async function handleCourseFileSelect(){
 
 function startEditCourse(id){ state.editCourseId = id; render(); document.getElementById('adminTabBody')?.scrollIntoView({behavior:'smooth'}); }
 function cancelEditCourse(){ state.editCourseId = null; render(); }
+function autoFillDescription(){
+  const title = document.getElementById('crsTitle').value.trim();
+  const category = document.getElementById('crsCategory').value.trim();
+  const workload = document.getElementById('crsWorkload').value;
+  const execDate = document.getElementById('crsExecDate').value;
+  if(!title){ setMsg('err','Preencha o título do curso/treinamento primeiro.'); return; }
+
+  const areaPhrase = category
+    ? `na área de ${category.toLowerCase()}`
+    : `na área de contabilidade, auditoria e gestão tributária`;
+  const dateSentence = execDate
+    ? ` Realizado em ${fmtDateLong(execDate)}.`
+    : '';
+  const workloadSentence = workload
+    ? ` Com carga horária de ${workload} horas, `
+    : ' ';
+
+  const templates = [
+    `Treinamento voltado a profissionais que atuam ${areaPhrase}, abordando os principais aspectos práticos de "${title}".${workloadSentence}o conteúdo foi desenvolvido pela G3 AudCon com foco em aplicação imediata na rotina fiscal e contábil das empresas.${dateSentence}`,
+    `Curso da G3 AudCon dedicado a "${title}", com abordagem prática ${areaPhrase}.${workloadSentence}reunindo conceitos técnicos, exemplos reais e atualizações normativas relevantes para o dia a dia profissional.${dateSentence}`,
+    `Conteúdo técnico sobre "${title}", elaborado pela G3 AudCon ${areaPhrase}.${workloadSentence}com linguagem objetiva e aplicável, pensado para quem precisa colocar o tema em prática rapidamente.${dateSentence}`
+  ];
+  const chosen = templates[Math.floor(Math.random()*templates.length)].replace(/\s+/g,' ').trim();
+  document.getElementById('crsDesc').value = chosen;
+  setMsg('ok','Descrição gerada — revise e ajuste como preferir antes de salvar.');
+}
+
 async function saveEditCourse(id){
   const c = state.courses.find(x=>x.id===id);
   if(!c) return;
@@ -1101,6 +1138,7 @@ async function saveEditCourse(id){
     description: document.getElementById('crsDesc').value.trim(),
     type: document.getElementById('crsType').value,
     workload: parseInt(document.getElementById('crsWorkload').value)||0,
+    executionDate: document.getElementById('crsExecDate').value || null,
     url: document.getElementById('crsUrl').value.trim()
   };
   try{
@@ -1117,9 +1155,10 @@ async function addCourse(){
   const desc = document.getElementById('crsDesc').value.trim();
   const type = document.getElementById('crsType').value;
   const workload = parseInt(document.getElementById('crsWorkload').value)||0;
+  const executionDate = document.getElementById('crsExecDate').value || null;
   const url = document.getElementById('crsUrl').value.trim();
   if(!title){ setMsg('err','Informe o título do curso/treinamento.'); return; }
-  const course = {id:'crs-'+Date.now(), title, category, description:desc, type, workload, url, createdAt:new Date().toISOString()};
+  const course = {id:'crs-'+Date.now(), title, category, description:desc, type, workload, executionDate, url, createdAt:new Date().toISOString()};
   try{
     await apiFetch('/courses', { method:'POST', body: JSON.stringify(course) });
     state.courses.push(course);
