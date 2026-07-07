@@ -1,0 +1,9 @@
+{
+  "name": "g3-audcon-plataforma-cursos",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Plataforma de Cursos e Certificação G3 AudCon — backend em Netlify Functions + Netlify Blobs",
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0"
+  }
+}
