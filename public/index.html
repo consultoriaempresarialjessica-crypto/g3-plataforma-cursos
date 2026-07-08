@@ -220,6 +220,7 @@
     display:flex; align-items:center; justify-content:space-between; width:100%; position:relative; z-index:2; gap:18px;
   }
   .cert-seal-official{flex-shrink:0;}
+  .cert-header-spacer{width:56px; flex-shrink:0;}
   .cert-header-text{flex:1; text-align:center;}
   .cert-header-text .inst-name{
     font-family:'Poppins',sans-serif; font-weight:700; font-size:19px; letter-spacing:.06em;
@@ -265,10 +266,6 @@
     margin-top:16px; position:relative; z-index:2;
   }
   .cert-footer-verify .qrbox{background:#fff; padding:4px; border:1.5px solid var(--navy-deep); border-radius:3px; line-height:0;}
-  .cert-footer-verify .verify-text{
-    font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--ink-soft); text-align:left; line-height:1.6;
-  }
-  .cert-footer-verify .verify-text strong{color:var(--navy-deep);}
   .cert-actions{display:flex; gap:10px; margin-top:18px; flex-wrap:wrap;}
 
   /* ---------- Validate result ---------- */
@@ -1252,18 +1249,7 @@ function renderCertificateBlock(cert){
         <div class="cert-inner">
           <div class="cert-ribbon-diagonal"></div>
           <div class="cert-header-row">
-            <div class="cert-seal-official">
-              <svg width="92" height="92" viewBox="0 0 200 200">
-                <defs><path id="circlePath-${certId}" d="M 100,100 m -78,0 a 78,78 0 1,1 156,0 a 78,78 0 1,1 -156,0"/></defs>
-                <circle cx="100" cy="100" r="96" fill="#FBF8F1" stroke="#0A1650" stroke-width="3"/>
-                <circle cx="100" cy="100" r="82" fill="none" stroke="#C0854A" stroke-width="1.5"/>
-                <circle cx="100" cy="100" r="52" fill="#0A1650"/>
-                <text font-family="Poppins, sans-serif" font-size="18" font-weight="700" fill="#FFFFFF" text-anchor="middle" x="100" y="107">G3</text>
-                <text font-family="Poppins, sans-serif" font-size="10.5" font-weight="600" letter-spacing="2.5" fill="#0A1650">
-                  <textPath href="#circlePath-${certId}" startOffset="1%">G3 AUDCON • CERTIFICAÇÃO OFICIAL •</textPath>
-                </text>
-              </svg>
-            </div>
+            <div class="cert-header-spacer"></div>
             <div class="cert-header-text">
               <div class="inst-name">G3 AudCon</div>
               <div class="inst-sub">Contabilidade Estratégica e Recuperação Tributária<br>Campina Grande — Paraíba</div>
@@ -1304,10 +1290,6 @@ function renderCertificateBlock(cert){
 
           <div class="cert-footer-verify">
             <div class="qrbox" id="qr-${certId}"></div>
-            <div class="verify-text">
-              Valide em <strong>g3-plataforma-cursos.netlify.app</strong><br>
-              Código de validação: <strong>${esc(cert.code)}</strong>
-            </div>
           </div>
         </div>
       </div>
