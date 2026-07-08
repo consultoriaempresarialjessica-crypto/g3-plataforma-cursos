@@ -2582,6 +2582,17 @@ var qrcode = function() {
   .kv{display:grid; grid-template-columns:180px 1fr; gap:6px 14px; font-size:14px; margin-top:12px;}
   .kv dt{color:var(--ink-soft); font-weight:600;}
   .kv dd{margin:0;}
+  .valid-banner{
+    display:flex; align-items:center; gap:8px; background:#EFF7F1; border:2px solid var(--ok);
+    color:#215038; font-weight:600; font-size:14px; padding:12px 18px; border-radius:var(--radius); margin:18px 0 16px;
+  }
+  .validated-stamp{
+    position:absolute; top:28px; right:44px; z-index:6;
+    border:3.5px solid var(--ok); color:var(--ok); background:rgba(239,247,241,.9);
+    font-family:'Poppins',sans-serif; font-weight:800; font-size:22px; letter-spacing:.08em;
+    padding:8px 18px; border-radius:6px; transform:rotate(-10deg);
+    box-shadow:0 3px 10px rgba(0,0,0,.12); pointer-events:none;
+  }
 
   .modal-bg{
     position:fixed; inset:0; background:rgba(10,16,50,.6); display:flex; align-items:center; justify-content:center;
@@ -3170,19 +3181,19 @@ async function doValidate(){
     return;
   }
   box.innerHTML = `
-    <div class="valid-card">
-      <h3>✅ Certificado válido</h3>
-      <dl class="kv">
-        <dt>Participante</dt><dd>${esc(cert.studentName)}</dd>
-        <dt>Curso</dt><dd>${esc(cert.courseTitle)}</dd>
-        <dt>Carga horária</dt><dd>${esc(String(cert.workload))} horas</dd>
-        <dt>Data de conclusão</dt><dd>${fmtDate(cert.issueDate)}</dd>
-        <dt>Instrutora</dt><dd>${esc(INSTRUCTOR.nome)} (${INSTRUCTOR.crc})</dd>
-        <dt>Emissor</dt><dd>${esc(COMPANY.razaoSocial)} — CNPJ ${COMPANY.cnpj}</dd>
-        <dt>Código</dt><dd class="mono">${esc(cert.code)}</dd>
-      </dl>
+    <div class="valid-banner">✅ Certificado autêntico — validado na base oficial da G3 AudCon</div>
+    <div class="cert-wrap" style="position:relative;">
+      <div class="validated-stamp">VALIDADO</div>
+      <div class="certificate" id="certValidated-${cert.code.replace(/[^A-Z0-9]/g,'')}">
+        ${renderCertificateInner(cert)}
+      </div>
+    </div>
+    <div class="cert-actions">
+      <button class="btn" onclick="downloadCertPNG('${cert.code}', 'certValidated-')">Baixar PNG</button>
+      <button class="btn copper" onclick="downloadCertPDF('${cert.code}', 'certValidated-')">Baixar PDF</button>
     </div>
   `;
+  renderQR(cert.code, 0, 'certValidated-');
 }
 
 /* ============ LOGIN (Netlify Identity) ============ */
@@ -3546,14 +3557,10 @@ async function issueCertificate(){
   }catch(e){ console.error(e); setMsg('err','Não foi possível emitir o certificado.'); }
 }
 
-function renderCertificateBlock(cert){
+function renderCertificateInner(cert, idPrefix){
+  idPrefix = idPrefix || 'qr-';
   const certId = cert.code.replace(/[^A-Z0-9]/g,'');
-  const firstName = (cert.studentName||'').trim().split(' ')[0] || 'Participante';
   return `
-  <div class="panel">
-    <h3>Pré-visualização do certificado</h3>
-    <div class="cert-wrap">
-      <div class="certificate" id="certRender-${certId}">
         <div class="cert-pattern-border"></div>
         <div class="cert-inner">
           <div class="cert-ribbon-diagonal"></div>
@@ -3598,10 +3605,19 @@ function renderCertificateBlock(cert){
           </div>
 
           <div class="cert-footer-verify">
-            <div class="qrbox" id="qr-${certId}"></div>
+            <div class="qrbox" id="${idPrefix}${certId}"></div>
             <div class="verify-code">${esc(cert.code)}</div>
           </div>
-        </div>
+        </div>`;
+}
+function renderCertificateBlock(cert){
+  const certId = cert.code.replace(/[^A-Z0-9]/g,'');
+  return `
+  <div class="panel">
+    <h3>Pré-visualização do certificado</h3>
+    <div class="cert-wrap">
+      <div class="certificate" id="certRender-${certId}">
+        ${renderCertificateInner(cert, 'qr-')}
       </div>
     </div>
     <div class="cert-actions">
@@ -3610,13 +3626,14 @@ function renderCertificateBlock(cert){
     </div>
   </div>`;
 }
-function renderQR(code, attempt){
+function renderQR(code, attempt, idPrefix){
   attempt = attempt || 0;
-  const el = document.getElementById('qr-'+code.replace(/[^A-Z0-9]/g,''));
+  idPrefix = idPrefix || 'qr-';
+  const el = document.getElementById(idPrefix+code.replace(/[^A-Z0-9]/g,''));
   if(!el) return;
   if(!window.qrcode){
     if(attempt < 10){
-      setTimeout(()=>renderQR(code, attempt+1), 300);
+      setTimeout(()=>renderQR(code, attempt+1, idPrefix), 300);
     }else{
       console.error('Biblioteca de QR Code não carregou após várias tentativas.');
       el.innerHTML = `<div style="width:64px;height:64px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#999;text-align:center;">QR indisponível</div>`;
@@ -3648,8 +3665,9 @@ function renderQR(code, attempt){
     }
   }
 }
-async function downloadCertPNG(code){
-  const id = 'certRender-'+code.replace(/[^A-Z0-9]/g,'');
+async function downloadCertPNG(code, idPrefix){
+  idPrefix = idPrefix || 'certRender-';
+  const id = idPrefix+code.replace(/[^A-Z0-9]/g,'');
   const node = document.getElementById(id);
   if(!node) return;
   const canvas = await html2canvas(node, {scale:2, backgroundColor:'#FCFAF5'});
@@ -3658,8 +3676,9 @@ async function downloadCertPNG(code){
   link.href = canvas.toDataURL('image/png');
   link.click();
 }
-async function downloadCertPDF(code){
-  const id = 'certRender-'+code.replace(/[^A-Z0-9]/g,'');
+async function downloadCertPDF(code, idPrefix){
+  idPrefix = idPrefix || 'certRender-';
+  const id = idPrefix+code.replace(/[^A-Z0-9]/g,'');
   const node = document.getElementById(id);
   if(!node) return;
   const canvas = await html2canvas(node, {scale:2, backgroundColor:'#FCFAF5'});
