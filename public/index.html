@@ -262,10 +262,13 @@
   .cert-sign2 .sig-name{font-family:'Poppins',sans-serif; font-weight:600; font-size:11.5px; color:var(--navy-deep);}
   .cert-sign2 .sig-role{font-family:'Poppins',sans-serif; font-size:9.5px; color:var(--ink-soft); line-height:1.5; margin-top:2px;}
   .cert-footer-verify{
-    width:100%; display:flex; align-items:center; justify-content:center; gap:14px;
+    width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
     margin-top:16px; position:relative; z-index:2;
   }
   .cert-footer-verify .qrbox{background:#fff; padding:4px; border:1.5px solid var(--navy-deep); border-radius:3px; line-height:0;}
+  .cert-footer-verify .verify-code{
+    font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; color:var(--navy-deep); letter-spacing:.04em;
+  }
   .cert-actions{display:flex; gap:10px; margin-top:18px; flex-wrap:wrap;}
 
   /* ---------- Validate result ---------- */
@@ -1290,6 +1293,7 @@ function renderCertificateBlock(cert){
 
           <div class="cert-footer-verify">
             <div class="qrbox" id="qr-${certId}"></div>
+            <div class="verify-code">${esc(cert.code)}</div>
           </div>
         </div>
       </div>
