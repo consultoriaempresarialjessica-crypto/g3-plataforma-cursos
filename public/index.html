@@ -2961,8 +2961,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
   }
   .cert-sign2{text-align:center;}
   .cert-sign2 .sig-stamp{
-    width:100%; max-width:210px; height:auto; object-fit:contain;
-    border:1px solid rgba(10,22,80,.15); border-radius:4px; margin:0 auto 8px; display:block;
+    width:100%; max-width:135px; height:auto; object-fit:contain;
+    border:1px solid rgba(10,22,80,.15); border-radius:3px; margin:0 auto 6px; display:block;
   }
   .cert-sign2 .sig-line{border-top:1.3px solid var(--navy-deep); width:170px; margin:0 auto 7px;}
   .cert-sign2 .sig-name{font-family:'Poppins',sans-serif; font-weight:600; font-size:13.5px; color:var(--navy-deep);}
@@ -4217,14 +4217,33 @@ function renderIssuePanel(){
         <p style="font-size:11.5px; color:var(--ink-soft); margin-top:4px;">Se preenchido com o mesmo e-mail da conta da pessoa, o certificado aparece automaticamente em "Meus certificados" quando ela se cadastrar ou entrar na plataforma.</p>
       </div>
       <div class="row2">
-        <div class="field"><label>Curso/Treinamento concluído</label><select id="certCourse">${courseOptions}</select></div>
-        <div class="field"><label>Data de conclusão</label><input id="certDate" type="date" value="${new Date().toISOString().slice(0,10)}"></div>
+        <div class="field"><label>Curso/Treinamento concluído</label><select id="certCourse" onchange="onCertCourseChange()">${courseOptions}</select></div>
+        <div id="certDateField"></div>
       </div>
       <button class="btn copper" onclick="issueCertificate()">Gerar certificado</button>
       `}
     </div>
     <div id="certPreviewArea"></div>
   `;
+}
+function onCertCourseChange(){
+  const courseId = document.getElementById('certCourse').value;
+  const course = state.courses.find(c=>c.id===courseId);
+  const el = document.getElementById('certDateField');
+  if(!course || !el) return;
+  if(course.modality==='presencial'){
+    el.innerHTML = `
+      <label>Data de conclusão</label>
+      <input type="text" value="${course.executionDate?fmtDate(course.executionDate):'Data de realização não cadastrada'}" disabled style="background:#F1EEE6; color:var(--ink-soft);">
+      <input type="hidden" id="certDate" value="${course.executionDate||''}">
+      <p style="font-size:11px; color:var(--ink-soft); margin-top:4px;">Presencial: data travada na data de realização do curso/treinamento.</p>
+    `;
+  }else{
+    el.innerHTML = `
+      <label>Data de conclusão</label>
+      <input id="certDate" type="date" value="${new Date().toISOString().slice(0,10)}">
+    `;
+  }
 }
 async function issueCertificate(){
   const studentName = document.getElementById('certStudent').value.trim();
@@ -4235,6 +4254,7 @@ async function issueCertificate(){
   const course = state.courses.find(c=>c.id===courseId);
   if(!studentName){ setMsg('err','Informe o nome do participante.'); return; }
   if(!course){ setMsg('err','Selecione um curso/treinamento válido.'); return; }
+  if(course.modality==='presencial' && !issueDate){ setMsg('err','Este curso/treinamento presencial não tem data de realização cadastrada. Edite o curso antes de emitir.'); return; }
   try{
     const cert = await apiFetch('/certificates', {
       method:'POST',
@@ -4539,6 +4559,9 @@ function attachViewBehavior(){
   }
   if(state.view === 'account' && document.getElementById('reqDynamicArea')){
     onReqCourseChange();
+  }
+  if(state.view === 'admin' && typeof adminTab !== 'undefined' && adminTab === 'issue' && document.getElementById('certDateField')){
+    onCertCourseChange();
   }
 }
 async function loadSecureCourseMedia(course){
