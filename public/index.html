@@ -2961,8 +2961,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
   }
   .cert-sign2{text-align:center;}
   .cert-sign2 .sig-stamp{
-    width:100%; max-width:135px; height:auto; object-fit:contain;
-    border:1px solid rgba(10,22,80,.15); border-radius:3px; margin:0 auto 6px; display:block;
+    width:100%; max-width:70px; height:auto; object-fit:contain;
+    border:1px solid rgba(10,22,80,.15); border-radius:3px; margin:0 auto 4px; display:block;
   }
   .cert-sign2 .sig-line{border-top:1.3px solid var(--navy-deep); width:170px; margin:0 auto 7px;}
   .cert-sign2 .sig-name{font-family:'Poppins',sans-serif; font-weight:600; font-size:13.5px; color:var(--navy-deep);}
@@ -4310,10 +4310,12 @@ function renderCertificateInner(cert, idPrefix){
             <div class="cert-sign2">
               <img src="${SIGNATURE_JESSICA_B64}" alt="Assinatura digital — Jéssica de Souza Gomes" class="sig-stamp">
               <div class="sig-role">${esc(INSTRUCTOR.cargo)}<br>${esc(INSTRUCTOR.crc)}</div>
+              <div class="sig-date">Conclusão: ${fmtDate(cert.issueDate)}</div>
             </div>
             <div class="cert-sign2">
               <img src="${SIGNATURE_G3_B64}" alt="Assinatura digital — G3 AudCon Serviços Contábeis Ltda" class="sig-stamp">
               <div class="sig-role">CNPJ ${COMPANY.cnpj}</div>
+              <div class="sig-date">Conclusão: ${fmtDate(cert.issueDate)}</div>
             </div>
             <div class="cert-sign2">
               <div class="sig-line" style="visibility:hidden;"></div>
