@@ -2998,7 +2998,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
 
   /* ---------- Folha de verificação / anexo (2ª página do PDF) ---------- */
   .verify-page{
-    width:1100px; min-width:1100px; aspect-ratio:1100/780; height:780px;
+    width:1100px; min-width:1100px; min-height:780px;
     background:#FBF8F1; border:1px solid var(--paper-line);
     padding:56px 76px; display:flex; flex-direction:column;
     font-family:'Poppins', sans-serif;
@@ -3995,6 +3995,11 @@ function renderIssuePanel(){
         <div class="field"><label>Nome completo do participante</label><input id="certStudent" placeholder="Nome como deve constar no certificado"></div>
         <div class="field"><label>CPF (opcional)</label><input id="certCpf" placeholder="000.000.000-00"></div>
       </div>
+      <div class="field">
+        <label>E-mail do participante (opcional, mas recomendado)</label>
+        <input id="certEmail" type="email" placeholder="email@exemplo.com">
+        <p style="font-size:11.5px; color:var(--ink-soft); margin-top:4px;">Se preenchido com o mesmo e-mail da conta da pessoa, o certificado aparece automaticamente em "Meus certificados" quando ela se cadastrar ou entrar na plataforma.</p>
+      </div>
       <div class="row2">
         <div class="field"><label>Curso/Treinamento concluído</label><select id="certCourse">${courseOptions}</select></div>
         <div class="field"><label>Data de conclusão</label><input id="certDate" type="date" value="${new Date().toISOString().slice(0,10)}"></div>
@@ -4008,6 +4013,7 @@ function renderIssuePanel(){
 async function issueCertificate(){
   const studentName = document.getElementById('certStudent').value.trim();
   const cpf = document.getElementById('certCpf').value.trim();
+  const studentEmail = document.getElementById('certEmail').value.trim();
   const courseId = document.getElementById('certCourse').value;
   const issueDate = document.getElementById('certDate').value;
   const course = state.courses.find(c=>c.id===courseId);
@@ -4017,7 +4023,7 @@ async function issueCertificate(){
     const cert = await apiFetch('/certificates', {
       method:'POST',
       body: JSON.stringify({
-        studentName, cpf,
+        studentName, cpf, studentEmail,
         courseId: course.id,
         courseTitle: course.title,
         workload: course.workload,
@@ -4190,7 +4196,11 @@ async function downloadCertPNG(code, idPrefix){
   const id = idPrefix+code.replace(/[^A-Z0-9]/g,'');
   const node = document.getElementById(id);
   if(!node) return;
-  const canvas = await html2canvas(node, {scale:2, backgroundColor:'#FCFAF5'});
+  const canvas = await html2canvas(node, {
+    scale:2, backgroundColor:'#FCFAF5',
+    height: node.scrollHeight, windowHeight: node.scrollHeight,
+    width: node.scrollWidth, windowWidth: node.scrollWidth
+  });
   const link = document.createElement('a');
   link.download = `Certificado_${code}.png`;
   link.href = canvas.toDataURL('image/png');
@@ -4202,7 +4212,11 @@ async function downloadCertPDF(code, idPrefix, verifyPrefix){
   const certId = code.replace(/[^A-Z0-9]/g,'');
   const node = document.getElementById(idPrefix+certId);
   if(!node) return;
-  const canvas = await html2canvas(node, {scale:2, backgroundColor:'#FCFAF5'});
+  const canvas = await html2canvas(node, {
+    scale:2, backgroundColor:'#FCFAF5',
+    height: node.scrollHeight, windowHeight: node.scrollHeight,
+    width: node.scrollWidth, windowWidth: node.scrollWidth
+  });
   const img = canvas.toDataURL('image/png');
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF({orientation:'landscape', unit:'px', format:[canvas.width, canvas.height]});
@@ -4210,7 +4224,11 @@ async function downloadCertPDF(code, idPrefix, verifyPrefix){
 
   const verifyNode = document.getElementById(verifyPrefix+certId);
   if(verifyNode){
-    const canvas2 = await html2canvas(verifyNode, {scale:2, backgroundColor:'#FBF8F1'});
+    const canvas2 = await html2canvas(verifyNode, {
+      scale:2, backgroundColor:'#FBF8F1',
+      height: verifyNode.scrollHeight, windowHeight: verifyNode.scrollHeight,
+      width: verifyNode.scrollWidth, windowWidth: verifyNode.scrollWidth
+    });
     const img2 = canvas2.toDataURL('image/png');
     pdf.addPage([canvas2.width, canvas2.height], 'landscape');
     pdf.addImage(img2, 'PNG', 0, 0, canvas2.width, canvas2.height);
@@ -4228,17 +4246,19 @@ function renderCertsPanel(){
     <div class="panel">
       <h3>Certificados emitidos (${state.certificates.length})</h3>
       <table>
-        <thead><tr><th>Código</th><th>Participante</th><th>Curso/Treinamento</th><th>Data</th><th>Status</th><th></th></tr></thead>
+        <thead><tr><th>Código</th><th>Participante</th><th>E-mail vinculado</th><th>Curso/Treinamento</th><th>Data</th><th>Status</th><th></th></tr></thead>
         <tbody>
           ${sorted.map(c=>`
             <tr>
               <td class="mono">${esc(c.code)}</td>
               <td>${esc(c.studentName)}</td>
+              <td>${c.studentEmail ? esc(c.studentEmail) : `<span style="color:var(--copper-dark); font-size:12px;">⚠️ não vinculado</span>`}</td>
               <td>${esc(c.courseTitle)}</td>
               <td>${fmtDate(c.issueDate)}</td>
               <td><span class="status-pill ${c.status}">${c.status==='active'?'Ativo':'Revogado'}</span></td>
               <td style="white-space:nowrap;">
                 <button class="btn ghost small" onclick="viewCert('${c.code}')">Ver</button>
+                <button class="btn ghost small" onclick="linkCertEmail('${c.code}')">${c.studentEmail?'Editar e-mail':'Vincular e-mail'}</button>
                 ${c.status==='active'
                   ? `<button class="btn danger small" onclick="revokeCert('${c.code}')">Revogar</button>`
                   : `<button class="btn small" onclick="reactivateCert('${c.code}')">Reativar</button>`}
@@ -4250,6 +4270,20 @@ function renderCertsPanel(){
     </div>
     <div id="certViewArea"></div>
   `;
+}
+async function linkCertEmail(code){
+  const cert = state.certificates.find(c=>c.code===code);
+  if(!cert) return;
+  const novoEmail = prompt(`Digite o e-mail da conta de ${cert.studentName} (deve ser o mesmo e-mail usado por ela para se cadastrar na plataforma):`, cert.studentEmail || '');
+  if(novoEmail===null) return;
+  const trimmed = novoEmail.trim();
+  if(trimmed && !/^\S+@\S+\.\S+$/.test(trimmed)){ setMsg('err','E-mail inválido.'); return; }
+  try{
+    await apiFetch('/certificates', { method:'PATCH', body: JSON.stringify({code, studentEmail: trimmed}) });
+    cert.studentEmail = trimmed;
+    setMsg('ok', trimmed ? `E-mail vinculado. O certificado agora aparece em "Meus certificados" para quem usar ${trimmed}.` : 'E-mail removido do certificado.');
+    navigate('admin');
+  }catch(e){ console.error(e); setMsg('err','Não foi possível atualizar o e-mail.'); }
 }
 function viewCert(code){
   const cert = state.certificates.find(c=>c.code===code);
